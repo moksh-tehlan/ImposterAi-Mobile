@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlinKapt)
+    alias(libs.plugins.daggerHilt)
+    alias(libs.plugins.googl.services)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -56,4 +60,32 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
+
+    // Dagger-Hilt
+    implementation(libs.dagger.hilt.android)
+    kapt(libs.dagger.hilt.compiler)
+
+    // Retrofit
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+
+    // Hilt with Jetpack libraries
+    implementation(libs.hilt.navigation.compose)
+
+    // Firebase BoM (Bill of Materials)
+    implementation(platform(libs.firebase.bom))
+
+    // Firebase Remote Config
+    implementation(libs.firebase.config.ktx)
+
+    // Kotlin Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // shared preferences
+    implementation(libs.androidx.shared.preferences)
 }

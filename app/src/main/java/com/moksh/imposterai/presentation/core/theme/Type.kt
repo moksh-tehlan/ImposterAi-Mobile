@@ -1,4 +1,4 @@
-package com.moksh.imposterai.ui.theme
+package com.moksh.imposterai.presentation.core.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
