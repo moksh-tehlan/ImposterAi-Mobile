@@ -11,5 +11,5 @@ interface GameRepository {
     suspend fun findMatch(): EmptyResult<DataError.Network>
     suspend fun sendMessage(message: String): EmptyResult<DataError.Network>
     fun socketEvents(): SharedFlow<SocketEvent>
-    fun checkResult(gameResultRequest: GameResultRequest): Result<Boolean, DataError>
+    suspend fun checkResult(gameResultRequest: GameResultRequest): Result<Boolean, DataError>
 }

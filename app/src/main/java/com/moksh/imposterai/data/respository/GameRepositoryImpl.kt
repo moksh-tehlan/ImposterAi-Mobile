@@ -1,6 +1,5 @@
 package com.moksh.imposterai.data.respository
 
-import android.util.Log
 import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.api.GameApi
 import com.moksh.imposterai.data.entity.WsRequest
@@ -40,12 +39,12 @@ class GameRepositoryImpl @Inject constructor(
         return webSocketService.eventFlow
     }
 
-    override fun checkResult(gameResultRequest: GameResultRequest): Result<Boolean, DataError> {
+    override suspend fun checkResult(gameResultRequest: GameResultRequest): Result<Boolean, DataError> {
         val result = safeCall {
             gameApi.checkResult(gameResultRequest)
         }
         return result.map { genericResponse ->
-            genericResponse.data.correctAnswer
+            genericResponse.data.isCorrectAnswer
         }
     }
 }

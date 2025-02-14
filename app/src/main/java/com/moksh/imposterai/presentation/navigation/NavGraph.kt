@@ -125,21 +125,24 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
         composable<Routes.MatchMaking> {
             MatchMakingScreen(
                 onMatchFound = {
-                    navController.navigate(Routes.Chat(
-                        matchId = it.matchId,
-                        currentTyperId = it.currentTyperId,
-                    ), builder = {
-                        popUpTo(Routes.MatchMaking) {
-                            inclusive = true
-                        }
-                    })
+                    navController.popBackStack()
+                    navController.navigate(
+                        Routes.Chat(
+                            matchId = it.matchId,
+                            currentTyperId = it.currentTyperId,
+                        )
+                    )
                 },
             )
         }
 
         composable<Routes.Chat> {
             ChatScreen(
-                onGameEnd = { navController.popBackStack() }
+                onGameEnd = { navController.popBackStack() },
+                onFindingMatch = {
+                    navController.popBackStack()
+                    navController.navigate(Routes.MatchMaking)
+                }
             )
         }
     }

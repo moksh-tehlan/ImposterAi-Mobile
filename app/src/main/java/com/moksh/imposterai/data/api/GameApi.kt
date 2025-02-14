@@ -10,5 +10,5 @@ import retrofit2.http.POST
 interface GameApi {
 
     @POST("/game/result")
-    fun checkResult(@Body gameResultRequest: GameResultRequest): GenericResponse<GameResultResponse>
+    suspend fun checkResult(@Body gameResultRequest: GameResultRequest): GenericResponse<GameResultResponse>
 }

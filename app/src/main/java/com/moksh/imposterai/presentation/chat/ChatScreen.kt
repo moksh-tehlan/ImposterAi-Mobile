@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.moksh.imposterai.data.entity.UserEntity
 import com.moksh.imposterai.data.websocket.SocketEvent
+import com.moksh.imposterai.presentation.chat.components.AfterGuessView
 import com.moksh.imposterai.presentation.chat.components.ChatScreenAppBar
 import com.moksh.imposterai.presentation.chat.components.ChatTextField
 import com.moksh.imposterai.presentation.chat.components.GameOverView
@@ -30,16 +31,22 @@ import com.moksh.imposterai.presentation.chat.viewmodel.ChatState
 import com.moksh.imposterai.presentation.chat.viewmodel.ChatViewModel
 import com.moksh.imposterai.presentation.common.ObserveAsEvents
 import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
+import com.moksh.imposterai.presentation.home.viewmodel.HomeEvent
+import com.moksh.imposterai.presentation.home.viewmodel.HomeState
+import com.moksh.imposterai.presentation.home.viewmodel.HomeViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(
     chatViewModel: ChatViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel(),
     onGameEnd: () -> Unit,
+    onFindingMatch: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
     ObserveAsEvents(chatViewModel.chatFlow) { chatEvent ->
         when (chatEvent) {
             is ChatEvent.Result -> {
@@ -56,24 +63,40 @@ fun ChatScreen(
             }
         }
     }
+
+    ObserveAsEvents(homeViewModel.homeSharedFlow) { event ->
+        when (event) {
+            is HomeEvent.FindMatchInitiated -> {
+                onFindingMatch()
+            }
+
+            is HomeEvent.Error -> {
+                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     ChatScreenView(
         chatState = chatViewModel.chatState.collectAsStateWithLifecycle().value,
+        homeState = homeViewModel.homeState.collectAsStateWithLifecycle().value,
         onChangeChat = chatViewModel::updateCurrentChat,
         onMessageSent = {
             chatViewModel.sendChat()
         },
         result = {
             chatViewModel.submitAnswer(isChattingWithHuman = it)
-        }
+        },
+        onNewGame = { homeViewModel.findMatch() }
     )
 }
 
 @Composable
 private fun ChatScreenView(
     chatState: ChatState,
+    homeState: HomeState,
     onChangeChat: (String) -> Unit,
     onMessageSent: () -> Unit,
     result: (Boolean) -> Unit,
+    onNewGame: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -91,7 +114,9 @@ private fun ChatScreenView(
             chatState = chatState,
             onChangeChat = onChangeChat,
             onMessageSent = onMessageSent,
+            homeState = homeState,
             result = result,
+            onNewGame = onNewGame,
         )
     }
 }
@@ -100,9 +125,11 @@ private fun ChatScreenView(
 private fun ChatMessagesList(
     modifier: Modifier = Modifier,
     chatState: ChatState,
+    homeState: HomeState,
     onChangeChat: (String) -> Unit,
     result: (Boolean) -> Unit,
-    onMessageSent: () -> Unit
+    onMessageSent: () -> Unit,
+    onNewGame: () -> Unit,
 ) {
     val listState = rememberLazyListState()
 
@@ -135,7 +162,7 @@ private fun ChatMessagesList(
             }
         }
 
-        if (chatState.gameOver) {
+        if (chatState.gameOver && chatState.playerWon == null) {
             item(key = "gameover") {
                 GameOverView(
                     resultSubmitted = chatState.isResultSubmitted,
@@ -143,6 +170,16 @@ private fun ChatMessagesList(
                     humanButtonLoading = chatState.isHumanButtonLoading,
                     onAiButtonClick = { result(false) },
                     onHumanButtonClick = { result(true) }
+                )
+            }
+        }
+        if (chatState.playerWon != null) {
+            item(key = "afterguess") {
+                AfterGuessView(
+                    isBot = chatState.isOpponentAnAi ?: false,
+                    playerWon = chatState.playerWon,
+                    onNewGame = onNewGame,
+                    isButtonLoading = homeState.isLoading,
                 )
             }
         }
@@ -179,7 +216,8 @@ private fun ChatScreenPreview() {
                         )
                     }
                 )
-            )
+            ), homeState = HomeState(),
+            onNewGame = {}
         )
     }
 }

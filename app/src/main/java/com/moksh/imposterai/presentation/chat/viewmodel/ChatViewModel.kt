@@ -152,11 +152,21 @@ class ChatViewModel @Inject constructor(
 
             when (result) {
                 is Result.Success -> {
-                    _chatFlow.emit(ChatEvent.Result(isCorrectAnswer = result.data))
+                    _chatState.update {
+                        it.copy(
+                            playerWon = true,
+                            isOpponentAnAi = !isChattingWithHuman
+                        )
+                    }
                 }
 
                 is Result.Error -> {
-                    _chatFlow.emit(ChatEvent.Result(isCorrectAnswer = false))
+                    _chatState.update {
+                        it.copy(
+                            playerWon = false,
+                            isOpponentAnAi = isChattingWithHuman
+                        )
+                    }
                 }
             }
 

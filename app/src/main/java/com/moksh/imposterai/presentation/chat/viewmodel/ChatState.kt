@@ -5,7 +5,7 @@ import com.moksh.imposterai.data.websocket.SocketEvent
 
 data class ChatState(
     val timeLeft: Int = 120,
-    val matchId:String = "",
+    val matchId: String = "",
     val currentTurn: String = "",
     val currentPlayer: UserEntity? = null,
     val currentMessage: String = "",
@@ -14,4 +14,6 @@ data class ChatState(
     val isResultSubmitted: Boolean = false,
     val isHumanButtonLoading: Boolean = false,
     val isAiButtonLoading: Boolean = false,
+    val playerWon: Boolean? = null,
+    val isOpponentAnAi: Boolean? = null,
 )
