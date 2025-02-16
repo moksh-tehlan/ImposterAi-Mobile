@@ -1,11 +1,12 @@
 package com.moksh.imposterai.data.websocket
 
-import android.util.Log
 import com.moksh.imposterai.core.JsonConverter
-import com.moksh.imposterai.data.entity.ConnectionStatus
-import com.moksh.imposterai.data.entity.UserEntity
-import com.moksh.imposterai.data.entity.WsMessage
+import com.moksh.imposterai.data.entity.IncomingMessage
+import com.moksh.imposterai.data.entity.OutgoingMessage
+import com.moksh.imposterai.data.entity.request.Chat
+import com.moksh.imposterai.data.entity.request.SocketActions
 import com.moksh.imposterai.data.entity.request.SocketEvents
+import com.moksh.imposterai.data.entity.response.SocketEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import javax.inject.Inject
@@ -22,17 +22,15 @@ import javax.inject.Named
 
 class WebSocketService @Inject constructor(
     private val okHttpClient: OkHttpClient,
+    private val jsonConverter: JsonConverter,
     @Named("socketUrl") private val socketUrl: String
 ) {
     private var webSocket: WebSocket? = null
-    private val _connectionStatus = MutableSharedFlow<ConnectionStatus>(
+
+    private val _eventFlow = MutableSharedFlow<SocketEvent>(
         replay = 5,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
-
-    val connectionStatus = _connectionStatus.asSharedFlow()
-
-    private val _eventFlow = MutableSharedFlow<SocketEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
     fun connect() {
@@ -40,87 +38,9 @@ class WebSocketService @Inject constructor(
             .url(socketUrl)
             .build()
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    _connectionStatus.emit(ConnectionStatus.DISCONNECTED)
-                }
-            }
-
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    _connectionStatus.emit(ConnectionStatus.DISCONNECTING)
-                }
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    _connectionStatus.emit(ConnectionStatus.ERROR)
-                }
-            }
-
             override fun onMessage(webSocket: WebSocket, text: String) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    Log.d("text", text)
-                    val wsMessage = JsonConverter.fromJson<WsMessage<Any>>(text)
-                    Log.d("wsMessage", wsMessage.toString())
-                    when (wsMessage.action) {
-                        SocketEvents.MATCH_FOUND -> {
-                            wsMessage.data?.let { data ->
-                                val matchData =
-                                    JsonConverter.fromJson<SocketEvent.MatchFoundResponse>(
-                                        data.toString()
-                                    )
-                                Log.d("matchData", matchData.toString())
-                                _eventFlow.emit(matchData)
-                            }
-                        }
-
-                        SocketEvents.CHAT -> {
-                            wsMessage.data?.let { data ->
-                                try {
-                                    Log.d("Chat data", data.toString())
-                                    val matchData = JsonConverter.fromJson<SocketEvent.Chat>(
-                                        JsonConverter.toJson(data)
-                                    )
-                                    _eventFlow.emit(matchData)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
-
-                        SocketEvents.TIMER -> {
-                            wsMessage.data?.let { data ->
-                                val matchData =
-                                    JsonConverter.fromJson<SocketEvent.TimeLeft>(
-                                        data.toString()
-                                    )
-                                _eventFlow.emit(matchData)
-                            }
-                        }
-
-                        SocketEvents.TURN_CHANGE -> {
-                            wsMessage.data?.let { data ->
-                                val matchData =
-                                    JsonConverter.fromJson<SocketEvent.TurnChange>(
-                                        data.toString()
-                                    )
-                                _eventFlow.emit(matchData)
-                            }
-                        }
-
-                        SocketEvents.GAME_OVER -> {
-                            _eventFlow.emit(SocketEvent.GameOver)
-                        }
-
-                        else -> {}
-                    }
-                }
-            }
-
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    _connectionStatus.emit(ConnectionStatus.CONNECTED)
+                    handleMessage(text)
                 }
             }
         })
@@ -131,33 +51,66 @@ class WebSocketService @Inject constructor(
         webSocket = null
     }
 
-    fun onSendMessage(message: String) {
-        webSocket?.send(message)
+    private suspend fun handleMessage(text: String) {
+        val wsMessage = jsonConverter.fromJson<IncomingMessage<Any>>(text)
+
+        val event: SocketEvent = when (wsMessage.action) {
+            SocketEvents.MATCH_FOUND -> handleMatchFound(wsMessage.data)
+            SocketEvents.CHAT -> handleIncomingChat(wsMessage.data)
+            SocketEvents.TIMER -> handleTimer(wsMessage.data)
+            SocketEvents.GAME_OVER -> handleGameOver()
+            SocketEvents.PLAYER_LEFT -> handlePlayerLeft()
+        }
+
+        _eventFlow.emit(event)
+    }
+
+    private fun handleMatchFound(data: Any?): SocketEvent {
+        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        val matchFoundData =
+            jsonConverter.fromJson<SocketEvent.GameState.MatchFound>(jsonConverter.toJson(data))
+        return matchFoundData
+    }
+
+    private fun handleIncomingChat(data: Any?): SocketEvent {
+        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        val messageReceived =
+            jsonConverter.fromJson<SocketEvent.ChatEvent.MessageReceived>(jsonConverter.toJson(data))
+        return messageReceived
+    }
+
+    private fun handleTimer(data: Any?): SocketEvent {
+        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        val timeUpdate =
+            jsonConverter.fromJson<SocketEvent.GameState.TimeUpdate>(jsonConverter.toJson(data))
+        return timeUpdate
+    }
+
+    private fun handleGameOver(): SocketEvent {
+        return SocketEvent.GameLifecycle.GameOver
+    }
+
+    private fun handlePlayerLeft(): SocketEvent {
+        return SocketEvent.GameLifecycle.PlayerLeft
+    }
+
+    fun sendMatchRequest() {
+        val message = OutgoingMessage(
+            action = SocketActions.FIND_MATCH,
+            data = null,
+        )
+        webSocket?.send(jsonConverter.toJson(message))
+    }
+
+    fun sendChatMessage(message: String) {
+        val request = OutgoingMessage(
+            action = SocketActions.CHAT,
+            data = Chat(
+                message = message
+            )
+        )
+
+        webSocket?.send(jsonConverter.toJson(request))
     }
 }
 
-sealed interface SocketEvent {
-    data class MatchFoundResponse(
-        var matchId: String,
-        var currentTyperId: String,
-        var opponent: UserEntity,
-    ) : SocketEvent
-
-    data class TimeLeft(
-        var timeLeft: Int,
-    ) : SocketEvent
-
-    data class Chat(
-        var id: String,
-        var sender: UserEntity,
-        var message: String,
-        var currentTyperId: String,
-    ) : SocketEvent
-
-    data class TurnChange(
-        var userId: String,
-    ) : SocketEvent
-
-    data object GameOver : SocketEvent
-
-}

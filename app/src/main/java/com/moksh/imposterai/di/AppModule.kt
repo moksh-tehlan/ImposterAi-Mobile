@@ -1,6 +1,7 @@
 package com.moksh.imposterai.di
 
 import android.content.Context
+import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.api.AuthApi
 import com.moksh.imposterai.data.api.GameApi
 import com.moksh.imposterai.data.local.SharedPreferencesManager
@@ -54,7 +55,7 @@ object AppModule {
 
 
         return Retrofit.Builder()
-            .baseUrl("https://f77d-43-230-105-192.ngrok-free.app")
+            .baseUrl("https://a282-43-230-107-128.ngrok-free.app")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -67,7 +68,8 @@ object AppModule {
     ): WebSocketService {
         return WebSocketService(
             okHttpClient = okHttpClient,
-            socketUrl = "wss://f77d-43-230-105-192.ngrok-free.app/game"
+            socketUrl = "wss://a282-43-230-107-128.ngrok-free.app/game",
+            jsonConverter = JsonConverter
         )
     }
 

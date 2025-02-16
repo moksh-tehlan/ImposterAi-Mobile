@@ -1,6 +1,5 @@
 package com.moksh.imposterai.presentation.chat
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -13,89 +12,58 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.moksh.imposterai.data.entity.UserEntity
-import com.moksh.imposterai.data.websocket.SocketEvent
 import com.moksh.imposterai.presentation.chat.components.AfterGuessView
 import com.moksh.imposterai.presentation.chat.components.ChatScreenAppBar
 import com.moksh.imposterai.presentation.chat.components.ChatTextField
 import com.moksh.imposterai.presentation.chat.components.GameOverView
-import com.moksh.imposterai.presentation.chat.viewmodel.ChatEvent
-import com.moksh.imposterai.presentation.chat.viewmodel.ChatState
-import com.moksh.imposterai.presentation.chat.viewmodel.ChatViewModel
+import com.moksh.imposterai.presentation.chat.components.PlayerLeftView
 import com.moksh.imposterai.presentation.common.ObserveAsEvents
 import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
-import com.moksh.imposterai.presentation.home.viewmodel.HomeEvent
-import com.moksh.imposterai.presentation.home.viewmodel.HomeState
-import com.moksh.imposterai.presentation.home.viewmodel.HomeViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.moksh.imposterai.presentation.game_viewmodel.ChatState
+import com.moksh.imposterai.presentation.game_viewmodel.GameEvent
+import com.moksh.imposterai.presentation.game_viewmodel.GamePhase
+import com.moksh.imposterai.presentation.game_viewmodel.GamePlayState
+import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
+import com.moksh.imposterai.presentation.game_viewmodel.MatchState
+import com.moksh.imposterai.presentation.game_viewmodel.OpponentType
 
 @Composable
 fun ChatScreen(
-    chatViewModel: ChatViewModel = hiltViewModel(),
-    homeViewModel: HomeViewModel = hiltViewModel(),
-    onGameEnd: () -> Unit,
-    onFindingMatch: () -> Unit,
+    gameViewModel: GameViewModel,
+    onNavigateToHomeScreen: () -> Unit,
+    onNavigateToMatchMaking: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    ObserveAsEvents(chatViewModel.chatFlow) { chatEvent ->
-        when (chatEvent) {
-            is ChatEvent.Result -> {
-                Toast.makeText(
-                    context,
-                    "result is ${chatEvent.isCorrectAnswer}",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                scope.launch {
-                    delay(3000)
-                    onGameEnd()
-                }
-            }
-        }
-    }
-
-    ObserveAsEvents(homeViewModel.homeSharedFlow) { event ->
+    ObserveAsEvents(gameViewModel.gameEventFlow) { event ->
         when (event) {
-            is HomeEvent.FindMatchInitiated -> {
-                onFindingMatch()
-            }
-
-            is HomeEvent.Error -> {
-                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-            }
+            is GameEvent.NavigateToMatchMaking -> onNavigateToMatchMaking()
+            is GameEvent.NavigateToHomeScreen -> onNavigateToHomeScreen()
+            else -> {}
         }
     }
+
     ChatScreenView(
-        chatState = chatViewModel.chatState.collectAsStateWithLifecycle().value,
-        homeState = homeViewModel.homeState.collectAsStateWithLifecycle().value,
-        onChangeChat = chatViewModel::updateCurrentChat,
-        onMessageSent = {
-            chatViewModel.sendChat()
-        },
-        result = {
-            chatViewModel.submitAnswer(isChattingWithHuman = it)
-        },
-        onNewGame = { homeViewModel.findMatch() }
+        chatState = gameViewModel.chatState.collectAsStateWithLifecycle().value,
+        gamePlayState = gameViewModel.gamePlayState.collectAsStateWithLifecycle().value,
+        onChangeChat = gameViewModel::updateCurrentDraftedMessage,
+        onMessageSent = gameViewModel::sendMessage,
+        result = gameViewModel::guessAnswer,
+        onNewGame = gameViewModel::findMatch,
+        matchState = gameViewModel.matchState.collectAsStateWithLifecycle().value,
     )
 }
 
 @Composable
 private fun ChatScreenView(
     chatState: ChatState,
-    homeState: HomeState,
+    gamePlayState: GamePlayState,
+    matchState: MatchState,
     onChangeChat: (String) -> Unit,
     onMessageSent: () -> Unit,
-    result: (Boolean) -> Unit,
+    result: (OpponentType) -> Unit,
     onNewGame: () -> Unit
 ) {
     Scaffold(
@@ -114,8 +82,9 @@ private fun ChatScreenView(
             chatState = chatState,
             onChangeChat = onChangeChat,
             onMessageSent = onMessageSent,
-            homeState = homeState,
+            gameState = gamePlayState,
             result = result,
+            matchState = matchState,
             onNewGame = onNewGame,
         )
     }
@@ -125,9 +94,10 @@ private fun ChatScreenView(
 private fun ChatMessagesList(
     modifier: Modifier = Modifier,
     chatState: ChatState,
-    homeState: HomeState,
+    gameState: GamePlayState,
+    matchState: MatchState,
     onChangeChat: (String) -> Unit,
-    result: (Boolean) -> Unit,
+    result: (OpponentType) -> Unit,
     onMessageSent: () -> Unit,
     onNewGame: () -> Unit,
 ) {
@@ -139,55 +109,64 @@ private fun ChatMessagesList(
         verticalArrangement = Arrangement.spacedBy(15.dp)
     ) {
         items(
-            items = chatState.chats,
+            items = chatState.messages,
             key = { chat -> chat.id } // Assuming each chat has a unique ID
         ) { chat ->
             ChatTextField(
                 value = chat.message,
-                isMyChat = chat.sender.id == chatState.currentPlayer?.id
+                isMyChat = chat.senderId == matchState.currentPlayer?.id
             )
         }
 
-        if (!chatState.gameOver) {
+        if (gameState.gamePhase == GamePhase.InProgress) {
             item(key = "input") {
-                val isCurrentPlayer = chatState.currentTurn == chatState.currentPlayer?.id
                 ChatTextField(
-                    isEnabled = isCurrentPlayer,
-                    isMyChat = isCurrentPlayer,
-                    value = if (isCurrentPlayer) chatState.currentMessage else "",
-                    onMessageSent = if (isCurrentPlayer) onMessageSent else null,
-                    onValueChange = if (isCurrentPlayer) onChangeChat else null,
-                    isLoading = !isCurrentPlayer
+                    isEnabled = matchState.isMyTurn,
+                    isMyChat = matchState.isMyTurn,
+                    value = if (matchState.isMyTurn) chatState.currentDraftedMessage else "",
+                    onMessageSent = if (matchState.isMyTurn) onMessageSent else null,
+                    onValueChange = if (matchState.isMyTurn) onChangeChat else null,
+                    isLoading = !matchState.isMyTurn
                 )
             }
         }
 
-        if (chatState.gameOver && chatState.playerWon == null) {
+        if (gameState.gamePhase == GamePhase.GameOver) {
             item(key = "gameover") {
                 GameOverView(
-                    resultSubmitted = chatState.isResultSubmitted,
-                    aiButtonLoading = chatState.isAiButtonLoading,
-                    humanButtonLoading = chatState.isHumanButtonLoading,
-                    onAiButtonClick = { result(false) },
-                    onHumanButtonClick = { result(true) }
+                    aiButtonLoading = chatState.userGuess == OpponentType.AIBot,
+                    humanButtonLoading = chatState.userGuess == OpponentType.Human,
+                    onAiButtonClick = { result(OpponentType.AIBot) },
+                    onHumanButtonClick = { result(OpponentType.Human) }
                 )
             }
         }
-        if (chatState.playerWon != null) {
+        if (gameState.gamePhase is GamePhase.Guessed) {
+            val playerWinningStatus = gameState.gamePhase.isCorrectGuess
+            val opponentType = gameState.gamePhase.opponentType
             item(key = "afterguess") {
                 AfterGuessView(
-                    isBot = chatState.isOpponentAnAi ?: false,
-                    playerWon = chatState.playerWon,
+                    opponentType = opponentType,
+                    playerWon = playerWinningStatus,
                     onNewGame = onNewGame,
-                    isButtonLoading = homeState.isLoading,
+                    isButtonLoading = false,
+                )
+            }
+        }
+
+        if (gameState.gamePhase is GamePhase.PlayerLeft) {
+            item(key = "playerleft") {
+                PlayerLeftView(
+                    isButtonLoading = false,
+                    onNewGame = onNewGame
                 )
             }
         }
     }
 
     // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(chatState.chats.size, chatState.gameOver) {
-        listState.animateScrollToItem(chatState.chats.size)
+    LaunchedEffect(chatState.messages.size, gameState.gamePhase) {
+        listState.animateScrollToItem(chatState.messages.size)
     }
 }
 
@@ -201,22 +180,9 @@ private fun ChatScreenPreview() {
             result = {},
             chatState = ChatState(
                 timeLeft = 120,
-                gameOver = true,
-                chats = List(
-                    size = 4,
-                    init = {
-                        SocketEvent.Chat(
-                            message = "Hello there",
-                            sender = UserEntity(
-                                id = if (it % 2 == 0) "abc" else "xyx",
-                                username = "moksh"
-                            ),
-                            id = "abc$it",
-                            currentTyperId = ""
-                        )
-                    }
-                )
-            ), homeState = HomeState(),
+            ),
+            gamePlayState = GamePlayState(),
+            matchState = MatchState(),
             onNewGame = {}
         )
     }

@@ -1,6 +1,5 @@
 package com.moksh.imposterai.presentation.home
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,30 +20,33 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.moksh.imposterai.presentation.common.ObserveAsEvents
 import com.moksh.imposterai.presentation.common.PrimaryButton
 import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
-import com.moksh.imposterai.presentation.home.viewmodel.HomeEvent
+import com.moksh.imposterai.presentation.game_viewmodel.GameEvent
+import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
 import com.moksh.imposterai.presentation.home.viewmodel.HomeState
 import com.moksh.imposterai.presentation.home.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
+    gameViewModel: GameViewModel,
     homeViewModel: HomeViewModel = hiltViewModel(),
-    onFindingMatch: () -> Unit,
+    onNavigateToMatchmakingScreen: () -> Unit,
 ) {
-    val context = LocalContext.current
-    ObserveAsEvents(homeViewModel.homeSharedFlow) { event ->
+    ObserveAsEvents(gameViewModel.gameEventFlow) { event ->
         when (event) {
-            is HomeEvent.FindMatchInitiated -> {
-                onFindingMatch()
+            is GameEvent.NavigateToMatchMaking -> {
+                homeViewModel.switchButtonState()
+                onNavigateToMatchmakingScreen()
             }
-
-            is HomeEvent.Error -> {
-                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-            }
+            is GameEvent.Error -> homeViewModel.switchButtonState()
+            else -> {}
         }
     }
     HomeScreenView(
         state = homeViewModel.homeState.collectAsStateWithLifecycle().value,
-        onStartGame = homeViewModel::findMatch
+        onStartGame = {
+            homeViewModel.switchButtonState()
+            gameViewModel.findMatch()
+        }
     )
 }
 
@@ -79,8 +80,10 @@ private fun HomeScreenView(
             )
             Spacer(Modifier.height(20.dp))
             PrimaryButton(
-                isLoading = state.isLoading,
-                onClick = onStartGame, text = "Start Game"
+                isLoading = state.buttonLoading,
+                onClick = {
+                    onStartGame()
+                }, text = "Start Game"
             )
         }
     }

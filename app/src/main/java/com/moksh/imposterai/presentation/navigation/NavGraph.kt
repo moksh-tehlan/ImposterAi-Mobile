@@ -26,6 +26,7 @@ import com.moksh.imposterai.presentation.auth.LoginScreen
 import com.moksh.imposterai.presentation.auth.SingUpScreen
 import com.moksh.imposterai.presentation.chat.ChatScreen
 import com.moksh.imposterai.presentation.core.theme.Black
+import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
 import com.moksh.imposterai.presentation.home.HomeScreen
 import com.moksh.imposterai.presentation.matchmaking.MatchMakingScreen
 
@@ -118,28 +119,29 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
         startDestination = Routes.Home
     ) {
         composable<Routes.Home> { entry ->
+            val gameViewModel = entry.sharedViewModel<GameViewModel>(navController)
             HomeScreen(
-                onFindingMatch = { navController.navigate(Routes.MatchMaking) }
+                gameViewModel = gameViewModel,
+                onNavigateToMatchmakingScreen = { navController.navigate(Routes.MatchMaking) }
             )
         }
-        composable<Routes.MatchMaking> {
+        composable<Routes.MatchMaking> { entry ->
+            val gameViewModel = entry.sharedViewModel<GameViewModel>(navController)
             MatchMakingScreen(
+                gameViewModel = gameViewModel,
                 onMatchFound = {
                     navController.popBackStack()
-                    navController.navigate(
-                        Routes.Chat(
-                            matchId = it.matchId,
-                            currentTyperId = it.currentTyperId,
-                        )
-                    )
+                    navController.navigate(Routes.Chat)
                 },
             )
         }
 
-        composable<Routes.Chat> {
+        composable<Routes.Chat> { entry ->
+            val gameViewModel = entry.sharedViewModel<GameViewModel>(navController)
             ChatScreen(
-                onGameEnd = { navController.popBackStack() },
-                onFindingMatch = {
+                gameViewModel = gameViewModel,
+                onNavigateToHomeScreen = {navController.popBackStack()},
+                onNavigateToMatchMaking = {
                     navController.popBackStack()
                     navController.navigate(Routes.MatchMaking)
                 }

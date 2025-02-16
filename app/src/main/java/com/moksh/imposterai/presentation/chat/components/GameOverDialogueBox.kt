@@ -18,7 +18,6 @@ import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
 @Composable
 fun GameOverView(
     modifier: Modifier = Modifier,
-    resultSubmitted: Boolean,
     aiButtonLoading: Boolean,
     humanButtonLoading: Boolean,
     onHumanButtonClick: () -> Unit,
@@ -41,12 +40,12 @@ fun GameOverView(
 
         PrimaryButton(
             text = "Human", onClick = {
-                if (!resultSubmitted) onHumanButtonClick()
+                onHumanButtonClick()
             }, isLoading = humanButtonLoading
         )
         Spacer(Modifier.height(10.dp))
         PrimaryButton(text = "AI Bot", onClick = {
-            if (!resultSubmitted) onAiButtonClick()
+            onAiButtonClick()
         }, isLoading = aiButtonLoading)
     }
 }
@@ -60,7 +59,6 @@ private fun GameOverViewPreview() {
             humanButtonLoading = false,
             onHumanButtonClick = {},
             onAiButtonClick = {},
-            resultSubmitted = false
         )
     }
 }

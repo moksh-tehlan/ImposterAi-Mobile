@@ -1,12 +1,9 @@
 package com.moksh.imposterai.data.respository
 
-import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.api.GameApi
-import com.moksh.imposterai.data.entity.WsRequest
 import com.moksh.imposterai.data.entity.request.GameResultRequest
-import com.moksh.imposterai.data.entity.request.SocketActions
+import com.moksh.imposterai.data.entity.response.SocketEvent
 import com.moksh.imposterai.data.utils.safeCall
-import com.moksh.imposterai.data.websocket.SocketEvent
 import com.moksh.imposterai.data.websocket.WebSocketService
 import com.moksh.imposterai.domain.repository.GameRepository
 import com.moksh.imposterai.domain.utils.DataError
@@ -23,16 +20,22 @@ class GameRepositoryImpl @Inject constructor(
     private val gameApi: GameApi,
 ) : GameRepository {
     override suspend fun findMatch(): EmptyResult<DataError.Network> {
-        webSocketService.connect()
-        val findMatchMessage = WsRequest<Any>(SocketActions.FIND_MATCH)
-        webSocketService.onSendMessage(JsonConverter.toJson(findMatchMessage))
-        return Result.Success<Any>(Unit).asEmptyDataResult()
+        try {
+            webSocketService.connect()
+            webSocketService.sendMatchRequest()
+            return Result.Success(Unit).asEmptyDataResult()
+        } catch (e: Exception) {
+            return Result.Error(DataError.Network.UNKNOWN)
+        }
     }
 
     override suspend fun sendMessage(message: String): EmptyResult<DataError.Network> {
-        val sendChat = WsRequest(SocketActions.CHAT, Chat(message))
-        webSocketService.onSendMessage(JsonConverter.toJson(sendChat))
-        return Result.Success<Any>(Unit).asEmptyDataResult()
+        try {
+            webSocketService.sendChatMessage(message)
+            return Result.Success(Unit).asEmptyDataResult()
+        } catch (e: Exception) {
+            return Result.Error(DataError.Network.UNKNOWN)
+        }
     }
 
     override fun socketEvents(): SharedFlow<SocketEvent> {
@@ -40,15 +43,15 @@ class GameRepositoryImpl @Inject constructor(
     }
 
     override suspend fun checkResult(gameResultRequest: GameResultRequest): Result<Boolean, DataError> {
-        val result = safeCall {
+        return safeCall {
             gameApi.checkResult(gameResultRequest)
-        }
-        return result.map { genericResponse ->
+        }.map { genericResponse ->
             genericResponse.data.isCorrectAnswer
         }
     }
+
+    override fun disconnect() {
+        webSocketService.disconnect()
+    }
 }
 
-data class Chat(
-    val message: String,
-)

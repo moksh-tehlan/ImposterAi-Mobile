@@ -1,6 +1,5 @@
 package com.moksh.imposterai.presentation.matchmaking
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,31 +14,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.moksh.imposterai.data.websocket.SocketEvent
 import com.moksh.imposterai.presentation.common.ObserveAsEvents
 import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
-import com.moksh.imposterai.presentation.matchmaking.viewmodel.MatchMakingEvent
-import com.moksh.imposterai.presentation.matchmaking.viewmodel.MatchMakingViewModel
+import com.moksh.imposterai.presentation.game_viewmodel.GameEvent
+import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
 
 @Composable
 fun MatchMakingScreen(
-    onMatchFound: (opponent: SocketEvent.MatchFoundResponse) -> Unit,
-    viewModel: MatchMakingViewModel = hiltViewModel(),
+    onMatchFound: () -> Unit,
+    gameViewModel: GameViewModel,
 ) {
-    val context = LocalContext.current
-    ObserveAsEvents(viewModel.matchMakingSharedFlow) { event ->
+    ObserveAsEvents(gameViewModel.gameEventFlow) { event ->
         when (event) {
-            is MatchMakingEvent.MatchFound -> {
-                onMatchFound(event.matchFoundResponse)
-            }
-
-            is MatchMakingEvent.Error -> {
-                Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-            }
+            is GameEvent.Error -> {}
+            is GameEvent.MatchFound -> onMatchFound()
+            else -> {}
         }
     }
     MatchMakingScreenView()

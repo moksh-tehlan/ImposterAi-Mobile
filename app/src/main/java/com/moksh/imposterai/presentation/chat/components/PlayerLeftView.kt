@@ -12,31 +12,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.moksh.imposterai.presentation.common.PrimaryButton
 import com.moksh.imposterai.presentation.core.theme.Black
 import com.moksh.imposterai.presentation.core.theme.ImposterAiTheme
 import com.moksh.imposterai.presentation.core.theme.White
-import com.moksh.imposterai.presentation.game_viewmodel.OpponentType
 
 @Composable
-fun AfterGuessView(
+fun PlayerLeftView(
     modifier: Modifier = Modifier,
-    opponentType: OpponentType,
-    playerWon: Boolean,
-    onNewGame: () -> Unit,
     isButtonLoading: Boolean = false,
+    onNewGame: () -> Unit,
 ) {
-
-    val isBot = opponentType == OpponentType.AIBot
-    val resultText = if (playerWon) "SPOT ON!" else "WRONG!"
-    val supportingText =
-        if (playerWon) "It takes one to know one!" else "Singularity is just around the corner"
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -44,25 +33,20 @@ fun AfterGuessView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(20.dp))
-        Text(resultText, color = MaterialTheme.colorScheme.onSecondary)
+        Text("Oops!!", color = MaterialTheme.colorScheme.onSecondary)
         Spacer(Modifier.height(20.dp))
         Text(
-            buildAnnotatedString {
-                append("You just talked to ${if (isBot) "An" else "a fellow"} ")
-                withStyle(
-                    style = SpanStyle(
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    append(if (isBot) "AI Bot" else "Human")
-                }
-            }, style = MaterialTheme.typography.headlineMedium.copy(
+            text = "Your opponent has left the match",
+            style = MaterialTheme.typography.headlineMedium.copy(
                 MaterialTheme.colorScheme.onSecondary
             ),
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(10.dp))
-        Text(supportingText, color = MaterialTheme.colorScheme.onSecondary.copy(alpha = .75f))
+        Text(
+            "You can always start a new game",
+            color = MaterialTheme.colorScheme.onSecondary.copy(alpha = .75f)
+        )
         Spacer(Modifier.height(20.dp))
 
         PrimaryButton(
@@ -82,11 +66,9 @@ fun AfterGuessView(
 
 @Composable
 @Preview
-private fun AfterGuessViewPreview() {
+private fun PlayerLeftViewPreview() {
     ImposterAiTheme {
-        AfterGuessView(
-            opponentType = OpponentType.AIBot,
-            playerWon = true,
+        PlayerLeftView(
             onNewGame = {}
         )
     }

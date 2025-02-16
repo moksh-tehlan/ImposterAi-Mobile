@@ -18,10 +18,7 @@ sealed interface Routes {
     data object MatchMaking : Routes
 
     @Serializable
-    data class Chat(
-        val matchId: String,
-        val currentTyperId: String,
-    ) : Routes
+    data object Chat : Routes
 }
 
 sealed interface Graphs {
