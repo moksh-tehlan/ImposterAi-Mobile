@@ -1,7 +1,9 @@
 package com.moksh.imposterai.data.api
 
 import com.moksh.imposterai.data.entity.request.AuthRequest
+import com.moksh.imposterai.data.entity.request.RefreshTokenRequest
 import com.moksh.imposterai.data.entity.response.GenericResponse
+import com.moksh.imposterai.data.entity.response.RefreshTokenResponse
 import com.moksh.imposterai.data.entity.response.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -16,4 +18,9 @@ interface AuthApi {
     suspend fun signup(
         @Body authRequest: AuthRequest
     ): GenericResponse<UserResponse>
+
+    @POST("/auth/refresh-token")
+    suspend fun refreshToken(
+        @Body refreshTokenRequest: RefreshTokenRequest
+    ): GenericResponse<RefreshTokenResponse>
 }

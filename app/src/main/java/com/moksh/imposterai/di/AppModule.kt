@@ -1,17 +1,19 @@
 package com.moksh.imposterai.di
 
 import android.content.Context
+import com.moksh.imposterai.BuildConfig
 import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.api.AuthApi
 import com.moksh.imposterai.data.api.GameApi
+import com.moksh.imposterai.data.httpInterceptor.AuthInterceptor
 import com.moksh.imposterai.data.local.SharedPreferencesManager
+import com.moksh.imposterai.data.local.TokenManager
 import com.moksh.imposterai.data.websocket.WebSocketService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -22,26 +24,27 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    @Provides
+    @Singleton
+    fun provideAuthInterceptor(
+        sharedPreferencesManager: SharedPreferencesManager,
+        tokenManager: TokenManager,
+    ): AuthInterceptor {
+        return AuthInterceptor(
+            sharedPreferencesManager,
+            tokenManager,
+        )
+    }
 
     @Provides
     @Singleton
-    fun providesHttpClient(sharedPreferencesManager: SharedPreferencesManager): OkHttpClient {
-        val authToken = sharedPreferencesManager.getToken()
+    fun providesHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
 
         val loggingInterceptor = HttpLoggingInterceptor()
         loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
 
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(Interceptor { chain ->
-                val original = chain.request()
-                val requestBuilder = original.newBuilder()
-                if (!authToken.isNullOrEmpty()) {
-                    requestBuilder.addHeader("Authorization", "Bearer $authToken")
-                }
-                requestBuilder.method(original.method, original.body)
-                val request = requestBuilder.build()
-                chain.proceed(request)
-            })
+            .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
         return okHttpClient
@@ -52,10 +55,8 @@ object AppModule {
     fun provideRetrofitInstance(
         okHttpClient: OkHttpClient
     ): Retrofit {
-
-
         return Retrofit.Builder()
-            .baseUrl("https://a282-43-230-107-128.ngrok-free.app")
+            .baseUrl("https://" + BuildConfig.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -68,7 +69,7 @@ object AppModule {
     ): WebSocketService {
         return WebSocketService(
             okHttpClient = okHttpClient,
-            socketUrl = "wss://a282-43-230-107-128.ngrok-free.app/game",
+            socketUrl = "wss://" + BuildConfig.BASE_URL,
             jsonConverter = JsonConverter
         )
     }
@@ -89,5 +90,11 @@ object AppModule {
     @Singleton
     fun providesSharedPref(@ApplicationContext context: Context): SharedPreferencesManager {
         return SharedPreferencesManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTokenManager(): TokenManager {
+        return TokenManager()
     }
 }

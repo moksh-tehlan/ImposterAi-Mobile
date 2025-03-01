@@ -18,10 +18,12 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun login(authRequest: AuthRequest): Result<UserEntity, DataError> {
         val result = safeCall { authApi.login(authRequest) }
         return result.map { response ->
-            val token = response.data.token
+            val accessToken = response.data.accessToken
+            val refreshToken = response.data.refreshToken
+
             val user = response.data.userDto
             sharedPref.saveUser(user)
-            sharedPref.saveToken(token)
+            sharedPref.saveTokens(accessToken, refreshToken)
             response.data.userDto
         }
     }
@@ -29,6 +31,12 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signup(authRequest: AuthRequest): Result<UserEntity, DataError> {
         val result = safeCall { authApi.signup(authRequest) }
         return result.map { response ->
+            val accessToken = response.data.accessToken
+            val refreshToken = response.data.refreshToken
+
+            val user = response.data.userDto
+            sharedPref.saveUser(user)
+            sharedPref.saveTokens(accessToken, refreshToken)
             response.data.userDto
         }
     }

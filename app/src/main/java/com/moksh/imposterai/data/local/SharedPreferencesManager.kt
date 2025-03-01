@@ -11,7 +11,8 @@ class SharedPreferencesManager(context: Context) {
         context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
 
     companion object {
-        private const val USER_TOKEN = "user_token"
+        private const val ACCESS_TOKEN = "access_token"
+        private const val REFRESH_TOKEN = "refresh_token"
         private const val USER = "user"
     }
 
@@ -25,15 +26,20 @@ class SharedPreferencesManager(context: Context) {
         return Gson().fromJson(jsonUserEntity, UserEntity::class.java)
     }
 
-    fun saveToken(token: String) {
-        sharedPreferences.edit().putString(USER_TOKEN, token).apply()
+    fun saveTokens(accessToken: String, refreshToken: String) {
+        sharedPreferences.edit().putString(ACCESS_TOKEN, accessToken)
+            .putString(REFRESH_TOKEN, refreshToken).apply()
     }
 
-    fun getToken(): String? {
-        return sharedPreferences.getString(USER_TOKEN, null)
+    fun getAccessTokenToken(): String? {
+        return sharedPreferences.getString(ACCESS_TOKEN, null)
     }
 
-    val isLoggedIn: Boolean = getToken() != null
+    fun getRefreshToken(): String? {
+        return sharedPreferences.getString(REFRESH_TOKEN, null)
+    }
+
+    val isLoggedIn: Boolean = getAccessTokenToken() != null
 
 
     fun clearAll() {

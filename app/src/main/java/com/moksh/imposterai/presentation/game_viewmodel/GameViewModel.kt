@@ -63,7 +63,8 @@ class GameViewModel @Inject constructor(
                     it.copy(
                         matchId = event.matchId,
                         opponent = event.opponent,
-                        currentPlayer = currentPlayer
+                        currentPlayer = currentPlayer,
+                        currentTyper = event.currentTyperId,
                     )
                 }
                 _gamePlayState.update {

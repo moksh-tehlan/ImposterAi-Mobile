@@ -1,5 +1,6 @@
 package com.moksh.imposterai.data.websocket
 
+import android.util.Log
 import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.entity.IncomingMessage
 import com.moksh.imposterai.data.entity.OutgoingMessage
@@ -53,6 +54,7 @@ class WebSocketService @Inject constructor(
 
     private suspend fun handleMessage(text: String) {
         val wsMessage = jsonConverter.fromJson<IncomingMessage<Any>>(text)
+        Log.d("Incoming Message: ",wsMessage.toString())
 
         val event: SocketEvent = when (wsMessage.action) {
             SocketEvents.MATCH_FOUND -> handleMatchFound(wsMessage.data)
