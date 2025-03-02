@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ImposterAi</string>
+    <string name="account_nout_verified">Account not verified</string>
+    <string name="error_unknown">Oops something went wrong please try again later</string>
 </resources>

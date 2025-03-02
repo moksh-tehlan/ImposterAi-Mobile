@@ -26,10 +26,13 @@ class AuthInterceptor @Inject constructor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val accessToken = sharedPreferencesManager.getAccessTokenToken()
-
         val originalRequest = chain.request()
-        val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer $accessToken")
+        val requestBuilder = originalRequest.newBuilder()
+        if(accessToken != null){
+            requestBuilder.header("Authorization", "Bearer $accessToken")
+        }
+
+        val newRequest = requestBuilder
             .build()
 
         val response = chain.proceed(newRequest)

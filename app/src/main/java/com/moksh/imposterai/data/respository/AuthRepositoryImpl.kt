@@ -7,7 +7,9 @@ import com.moksh.imposterai.data.local.SharedPreferencesManager
 import com.moksh.imposterai.data.utils.safeCall
 import com.moksh.imposterai.domain.repository.AuthRepository
 import com.moksh.imposterai.domain.utils.DataError
+import com.moksh.imposterai.domain.utils.EmptyResult
 import com.moksh.imposterai.domain.utils.Result
+import com.moksh.imposterai.domain.utils.asEmptyDataResult
 import com.moksh.imposterai.domain.utils.map
 import javax.inject.Inject
 
@@ -28,16 +30,8 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun signup(authRequest: AuthRequest): Result<UserEntity, DataError> {
+    override suspend fun signup(authRequest: AuthRequest): EmptyResult<DataError> {
         val result = safeCall { authApi.signup(authRequest) }
-        return result.map { response ->
-            val accessToken = response.data.accessToken
-            val refreshToken = response.data.refreshToken
-
-            val user = response.data.userDto
-            sharedPref.saveUser(user)
-            sharedPref.saveTokens(accessToken, refreshToken)
-            response.data.userDto
-        }
+        return result.asEmptyDataResult()
     }
 }

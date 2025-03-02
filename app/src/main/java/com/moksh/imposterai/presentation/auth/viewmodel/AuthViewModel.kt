@@ -1,12 +1,15 @@
 package com.moksh.imposterai.presentation.auth.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moksh.imposterai.data.entity.request.AuthRequest
 import com.moksh.imposterai.domain.repository.AuthRepository
 import com.moksh.imposterai.domain.utils.Result
+import com.moksh.imposterai.presentation.core.utils.asUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    @ApplicationContext val context: Context
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow(LoginState())
@@ -78,14 +82,17 @@ class AuthViewModel @Inject constructor(
             Log.d("AuthViewModel", "Login Request: $authRequest")
             when (val result = authRepository.login(authRequest)) {
                 is Result.Error -> {
-                    _loginSharedFlow.emit(LoginEvent.LoginError(message = result.error.toString()))
+                    _loginSharedFlow.emit(
+                        LoginEvent.LoginError(
+                            message = result.error.asUiText().asString(context)
+                        )
+                    )
                     _loginState.value = _loginState.value.copy(
                         isLoading = false,
                     )
                 }
 
                 is Result.Success -> {
-
                     _loginSharedFlow.emit(LoginEvent.LoginSuccessful)
                     _loginState.value = _loginState.value.copy(
                         isLoading = false,
@@ -116,7 +123,11 @@ class AuthViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-                    _signUpSharedFlow.emit(SignupEvent.SignupError(message = result.error.toString()))
+                    _signUpSharedFlow.emit(
+                        SignupEvent.SignupError(
+                            message = result.error.asUiText().asString(context)
+                        )
+                    )
                     _signupState.value = _signupState.value.copy(
                         isLoading = false,
                     )

@@ -54,7 +54,7 @@ class WebSocketService @Inject constructor(
 
     private suspend fun handleMessage(text: String) {
         val wsMessage = jsonConverter.fromJson<IncomingMessage<Any>>(text)
-        Log.d("Incoming Message: ",wsMessage.toString())
+        Log.d("Incoming Message: ", wsMessage.toString())
 
         val event: SocketEvent = when (wsMessage.action) {
             SocketEvents.MATCH_FOUND -> handleMatchFound(wsMessage.data)
@@ -62,27 +62,28 @@ class WebSocketService @Inject constructor(
             SocketEvents.TIMER -> handleTimer(wsMessage.data)
             SocketEvents.GAME_OVER -> handleGameOver()
             SocketEvents.PLAYER_LEFT -> handlePlayerLeft()
+            SocketEvents.ERROR -> handleError(wsMessage.data)
         }
 
         _eventFlow.emit(event)
     }
 
     private fun handleMatchFound(data: Any?): SocketEvent {
-        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        if (data == null) return SocketEvent.ConnectionEvent.Error(message = "data is required")
         val matchFoundData =
             jsonConverter.fromJson<SocketEvent.GameState.MatchFound>(jsonConverter.toJson(data))
         return matchFoundData
     }
 
     private fun handleIncomingChat(data: Any?): SocketEvent {
-        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        if (data == null) return SocketEvent.ConnectionEvent.Error(message = "data is required")
         val messageReceived =
             jsonConverter.fromJson<SocketEvent.ChatEvent.MessageReceived>(jsonConverter.toJson(data))
         return messageReceived
     }
 
     private fun handleTimer(data: Any?): SocketEvent {
-        if (data == null) return SocketEvent.ConnectionEvent.Error(error = "data is required")
+        if (data == null) return SocketEvent.ConnectionEvent.Error(message = "data is required")
         val timeUpdate =
             jsonConverter.fromJson<SocketEvent.GameState.TimeUpdate>(jsonConverter.toJson(data))
         return timeUpdate
@@ -94,6 +95,13 @@ class WebSocketService @Inject constructor(
 
     private fun handlePlayerLeft(): SocketEvent {
         return SocketEvent.GameLifecycle.PlayerLeft
+    }
+
+    private fun handleError(data: Any?): SocketEvent {
+        if (data == null) return SocketEvent.ConnectionEvent.Error(message = "data is required")
+        val errorReceived =
+            jsonConverter.fromJson<SocketEvent.ConnectionEvent.Error>(jsonConverter.toJson(data))
+        return errorReceived
     }
 
     fun sendMatchRequest() {

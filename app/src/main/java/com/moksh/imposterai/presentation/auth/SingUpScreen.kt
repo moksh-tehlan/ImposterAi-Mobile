@@ -42,7 +42,15 @@ fun SingUpScreen(
     val context = LocalContext.current
     ObserveAsEvents(viewModel.signUpSharedFlow) { event ->
         when (event) {
-            is SignupEvent.SignupSuccessful -> onSignUpSuccessful()
+            is SignupEvent.SignupSuccessful -> {
+                Toast.makeText(
+                    context,
+                    "Please try to login once the account gets verified",
+                    Toast.LENGTH_SHORT
+                ).show()
+                onSignUpSuccessful()
+            }
+
             is SignupEvent.SignupError -> {
                 Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
             }
@@ -115,7 +123,11 @@ private fun SingUpScreenView(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            PrimaryButton(onClick = onSignUpClick, text = "SignUp", isLoading = state.isLoading)
+            PrimaryButton(
+                onClick = onSignUpClick,
+                text = "Request Approval",
+                isLoading = state.isLoading
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(

@@ -44,7 +44,9 @@ sealed interface SocketEvent {
         data object Disconnected : ConnectionEvent
 
         data class Error(
-            val error: String
+            val message: String,
+            val status: Int = 500,
+            val errors: Map<String, String> = emptyMap()
         ) : ConnectionEvent
     }
 

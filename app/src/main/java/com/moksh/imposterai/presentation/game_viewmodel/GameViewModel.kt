@@ -122,7 +122,9 @@ class GameViewModel @Inject constructor(
         when (event) {
             is SocketEvent.ConnectionEvent.Connected -> {}
             is SocketEvent.ConnectionEvent.Disconnected -> {}
-            is SocketEvent.ConnectionEvent.Error -> {}
+            is SocketEvent.ConnectionEvent.Error -> {
+                viewModelScope.launch { _gameEventFlow.emit(GameEvent.Error(event)) }
+            }
         }
     }
 
@@ -137,7 +139,6 @@ class GameViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-
                 }
             }
         }

@@ -103,11 +103,7 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController) {
             SingUpScreen(
                 onLoginClick = { navController.popBackStack() },
                 onSignUpSuccessful = {
-                    navController.navigate(Routes.Home, builder = {
-                        popUpTo(Graphs.AuthGraph) {
-                            inclusive = true
-                        }
-                    })
+                    navController.popBackStack()
                 }
             )
         }
@@ -133,6 +129,9 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
                     navController.popBackStack()
                     navController.navigate(Routes.Chat)
                 },
+                onFindMatchFailure = {
+                    navController.popBackStack()
+                }
             )
         }
 

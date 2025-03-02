@@ -1,6 +1,7 @@
 package com.moksh.imposterai.di
 
 import android.content.Context
+import android.util.Log
 import com.moksh.imposterai.BuildConfig
 import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.api.AuthApi
@@ -55,6 +56,7 @@ object AppModule {
     fun provideRetrofitInstance(
         okHttpClient: OkHttpClient
     ): Retrofit {
+        Log.d("BaseURL", BuildConfig.BASE_URL)
         return Retrofit.Builder()
             .baseUrl("https://" + BuildConfig.BASE_URL)
             .client(okHttpClient)
@@ -69,7 +71,7 @@ object AppModule {
     ): WebSocketService {
         return WebSocketService(
             okHttpClient = okHttpClient,
-            socketUrl = "wss://" + BuildConfig.BASE_URL,
+            socketUrl = "wss://" + BuildConfig.BASE_URL + "/game",
             jsonConverter = JsonConverter
         )
     }

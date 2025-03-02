@@ -5,5 +5,5 @@ enum class SocketActions {
 }
 
 enum class SocketEvents {
-    MATCH_FOUND, CHAT, TIMER, GAME_OVER, PLAYER_LEFT
+    MATCH_FOUND, CHAT, TIMER, GAME_OVER, PLAYER_LEFT, ERROR
 }

@@ -1,5 +1,6 @@
 package com.moksh.imposterai.presentation.matchmaking
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.moksh.imposterai.presentation.common.ObserveAsEvents
@@ -24,11 +26,19 @@ import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
 @Composable
 fun MatchMakingScreen(
     onMatchFound: () -> Unit,
+    onFindMatchFailure: () -> Unit,
     gameViewModel: GameViewModel,
 ) {
+    val context = LocalContext.current
     ObserveAsEvents(gameViewModel.gameEventFlow) { event ->
         when (event) {
-            is GameEvent.Error -> {}
+            is GameEvent.Error -> {
+                if (event.error.status == 1002) {
+                    Toast.makeText(context, event.error.message, Toast.LENGTH_SHORT).show()
+                    onFindMatchFailure()
+                }
+            }
+
             is GameEvent.MatchFound -> onMatchFound()
             else -> {}
         }

@@ -22,15 +22,23 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        val envFile = rootProject.file(".env")
-        val properties = Properties()
-        properties.load(envFile.inputStream())
-        val baseUrl = properties.getProperty("BASE_URL")
-        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+
     }
 
     buildTypes {
+        debug {
+            val envFile = rootProject.file(".env")
+            val properties = Properties()
+            properties.load(envFile.inputStream())
+            val baseUrl = properties.getProperty("BASE_URL")
+            buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+        }
         release {
+            val envFile = rootProject.file(".env")
+            val properties = Properties()
+            properties.load(envFile.inputStream())
+            val baseUrl = properties.getProperty("BASE_URL")
+            buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
