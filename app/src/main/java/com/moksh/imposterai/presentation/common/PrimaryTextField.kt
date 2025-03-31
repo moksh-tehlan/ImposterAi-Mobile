@@ -23,6 +23,8 @@ fun PrimaryTextField(
     onValueChange: (String) -> Unit,
     label: String,
     isPasswordField: Boolean = false,
+    readOnly: Boolean = false,
+    suffixIcon: (@Composable () -> Unit)? = null,
     colors: TextFieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = MaterialTheme.colorScheme.primary,
         unfocusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -39,7 +41,9 @@ fun PrimaryTextField(
         modifier = modifier.fillMaxWidth(),
         value = value,
         onValueChange = onValueChange,
+        readOnly = readOnly,
         label = { Text(label, color = Color.White) },
+        suffix = suffixIcon,
         colors = colors,
         keyboardOptions = if (isPasswordField) {
             KeyboardOptions(keyboardType = KeyboardType.Password)

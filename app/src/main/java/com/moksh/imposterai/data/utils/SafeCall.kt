@@ -1,7 +1,6 @@
 package com.moksh.imposterai.data.utils
 
 import android.util.Log
-import com.google.firebase.FirebaseNetworkException
 import com.google.gson.JsonSyntaxException
 import com.moksh.imposterai.core.JsonConverter
 import com.moksh.imposterai.data.entity.response.ErrorResponse
@@ -21,7 +20,6 @@ inline fun <T> safeCall(
     } catch (e: Exception) {
         when (e) {
             is SocketTimeoutException -> Result.Error(DataError.Network.REQUEST_TIMEOUT)
-            is ConnectException, is FirebaseNetworkException -> Result.Error(DataError.Network.NO_INTERNET)
             is JsonSyntaxException -> Result.Error(DataError.Network.SERVER_ERROR)
             else -> Result.Error(DataError.Network.UNKNOWN)
         }.also { e.printStackTrace() }
@@ -29,6 +27,7 @@ inline fun <T> safeCall(
 }
 
 fun <T> responseToResult(response: Response<GenericResponse<T>>): Result<GenericResponse<T>, DataError.Network> {
+    Log.d("response: ",response.toString())
     if (response.isSuccessful) {
         val body = response.body()
         return if (body != null) {
@@ -38,7 +37,10 @@ fun <T> responseToResult(response: Response<GenericResponse<T>>): Result<Generic
         }
     }
 
-    val errorBodyString = response.errorBody()?.string()
+    val errorBody = response.errorBody()
+    Log.d("ErrorBody object", errorBody?.toString() ?: "null")
+    val errorBodyString = errorBody?.string()
+    Log.d("ErrorBody string", errorBodyString ?: "null")
     val errorResponse = if (!errorBodyString.isNullOrEmpty()) {
         try {
             JsonConverter.fromJson<ErrorResponse>(errorBodyString)

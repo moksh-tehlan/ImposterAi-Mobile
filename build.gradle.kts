@@ -5,6 +5,5 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlinKapt) apply false
     alias(libs.plugins.daggerHilt) apply false
-    alias(libs.plugins.googl.services) apply false
     alias(libs.plugins.kotlin.serialization) apply false
 }

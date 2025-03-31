@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moksh.imposterai.data.entity.request.AuthRequest
+import com.moksh.imposterai.data.local.SharedPreferencesManager
 import com.moksh.imposterai.domain.repository.AuthRepository
 import com.moksh.imposterai.domain.utils.Result
 import com.moksh.imposterai.presentation.core.utils.asUiText
@@ -23,6 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val sharedPreferencesManager: SharedPreferencesManager,
     @ApplicationContext val context: Context
 ) : ViewModel() {
 
@@ -97,6 +99,7 @@ class AuthViewModel @Inject constructor(
                     _loginState.value = _loginState.value.copy(
                         isLoading = false,
                     )
+                    sharedPreferencesManager.saveUser(result.data)
                 }
             }
         }

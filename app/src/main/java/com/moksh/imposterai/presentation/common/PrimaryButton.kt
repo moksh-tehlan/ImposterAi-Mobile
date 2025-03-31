@@ -21,6 +21,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     text: String,
     isLoading: Boolean = false,
+    enabled: Boolean = true,
     buttonColors: ButtonColors = ButtonColors(
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = Black,
@@ -29,12 +30,9 @@ fun PrimaryButton(
     ),
 ) {
     Button(
-        onClick = {
-            if (!isLoading) {
-                onClick()
-            }
-        },
+        onClick = onClick,
         colors = buttonColors,
+        enabled = enabled && !isLoading,
         modifier = modifier
             .height(60.dp)
             .fillMaxWidth(),

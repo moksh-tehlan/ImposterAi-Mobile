@@ -40,15 +40,19 @@ object AppModule {
     @Provides
     @Singleton
     fun providesHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
-
         val loggingInterceptor = HttpLoggingInterceptor()
-        loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+        loggingInterceptor.level = if (BuildConfig.DEBUG) {
+            HttpLoggingInterceptor.Level.BODY
+        } else {
+            HttpLoggingInterceptor.Level.NONE // Disable logs in release build
+        }
 
-        val okHttpClient = OkHttpClient.Builder()
+        val baseClient = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
-        return okHttpClient
+
+        return baseClient
     }
 
     @Provides
@@ -56,9 +60,10 @@ object AppModule {
     fun provideRetrofitInstance(
         okHttpClient: OkHttpClient
     ): Retrofit {
-        Log.d("BaseURL", BuildConfig.BASE_URL)
+        val baseUrl = "https://" + BuildConfig.BASE_URL
+        Log.d("RetrofitProvider", "Using base URL: $baseUrl")
         return Retrofit.Builder()
-            .baseUrl("https://" + BuildConfig.BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -96,7 +101,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTokenManager(): TokenManager {
-        return TokenManager()
+    fun provideTokenManager(sharedPreferencesManager: SharedPreferencesManager): TokenManager {
+        return TokenManager(sharedPreferencesManager)
     }
 }

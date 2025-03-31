@@ -1,5 +1,8 @@
 package com.moksh.imposterai.presentation.chat
 
+import android.health.connect.datatypes.units.Length
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -13,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,10 +41,18 @@ fun ChatScreen(
     onNavigateToHomeScreen: () -> Unit,
     onNavigateToMatchMaking: () -> Unit,
 ) {
+
+    BackHandler {
+        gameViewModel.handleBackPress()
+    }
+    val context = LocalContext.current
     ObserveAsEvents(gameViewModel.gameEventFlow) { event ->
         when (event) {
             is GameEvent.NavigateToMatchMaking -> onNavigateToMatchMaking()
             is GameEvent.NavigateToHomeScreen -> onNavigateToHomeScreen()
+            is GameEvent.Error -> {
+                Toast.makeText(context,event.error.message, Toast.LENGTH_SHORT).show()
+            }
             else -> {}
         }
     }

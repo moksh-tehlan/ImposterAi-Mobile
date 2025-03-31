@@ -8,7 +8,6 @@ sealed interface GamePhase {
     data object NotStarted : GamePhase
     data object MatchMaking : GamePhase
     data object InProgress : GamePhase
-    data object Guessing : GamePhase
     data object GameOver : GamePhase
     data class Guessed(val isCorrectGuess: Boolean, val opponentType: OpponentType) : GamePhase
     data object PlayerLeft : GamePhase

@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinKapt)
     alias(libs.plugins.daggerHilt)
-    alias(libs.plugins.googl.services)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -22,24 +21,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        val envFile = rootProject.file(".env")
+        val properties = Properties()
+        properties.load(envFile.inputStream())
+        val baseUrl = properties.getProperty("BASE_URL")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 
     buildTypes {
-        debug {
-            val envFile = rootProject.file(".env")
-            val properties = Properties()
-            properties.load(envFile.inputStream())
-            val baseUrl = properties.getProperty("BASE_URL")
-            buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
-        }
         release {
-            val envFile = rootProject.file(".env")
-            val properties = Properties()
-            properties.load(envFile.inputStream())
-            val baseUrl = properties.getProperty("BASE_URL")
-            buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -93,15 +85,11 @@ dependencies {
     // Hilt with Jetpack libraries
     implementation(libs.hilt.navigation.compose)
 
-    // Firebase BoM (Bill of Materials)
-    implementation(platform(libs.firebase.bom))
-
-    // Firebase Remote Config
-    implementation(libs.firebase.config.ktx)
-
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
 
     // shared preferences
     implementation(libs.androidx.shared.preferences)
+
+    implementation(libs.androidx.security.crypto)
 }

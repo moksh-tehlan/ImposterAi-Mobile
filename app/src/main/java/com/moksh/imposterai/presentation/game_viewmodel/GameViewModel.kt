@@ -203,6 +203,20 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    fun handleBackPress(): Boolean {
+        return when (_gamePlayState.value.gamePhase) {
+            GamePhase.MatchMaking, GamePhase.InProgress -> {
+                gameRepository.disconnect()
+                resetAllState()
+                viewModelScope.launch {
+                    _gameEventFlow.emit(GameEvent.NavigateToHomeScreen)
+                }
+                true
+            }
+            else -> false
+        }
+    }
+
     private fun resetAllState() {
         _matchState.value = MatchState()
         _chatState.value = ChatState()

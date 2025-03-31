@@ -12,8 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
@@ -28,7 +30,7 @@ class AuthInterceptor @Inject constructor(
         val accessToken = sharedPreferencesManager.getAccessTokenToken()
         val originalRequest = chain.request()
         val requestBuilder = originalRequest.newBuilder()
-        if(accessToken != null){
+        if (accessToken != null) {
             requestBuilder.header("Authorization", "Bearer $accessToken")
         }
 
@@ -43,7 +45,13 @@ class AuthInterceptor @Inject constructor(
                 return handleRefreshToken(chain, originalRequest, refreshToken)
             } else {
                 tokenManager.triggerLogout()
-                return response;
+                return Response.Builder()
+                    .request(originalRequest)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(401)
+                    .message("Authentication required")
+                    .body(ResponseBody.create(null, ByteArray(0)))
+                    .build();
             }
         }
         return response
@@ -94,7 +102,13 @@ class AuthInterceptor @Inject constructor(
                 return chain.proceed(newRequest)
             } else {
                 tokenManager.triggerLogout()
-                return chain.proceed(originalRequest)
+                return Response.Builder()
+                    .request(originalRequest)
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(401)
+                    .message("Authentication required")
+                    .body(ResponseBody.create(null, ByteArray(0)))
+                    .build()
             }
         }
 

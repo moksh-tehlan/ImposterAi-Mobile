@@ -19,6 +19,9 @@ sealed interface Routes {
 
     @Serializable
     data object Chat : Routes
+
+    @Serializable
+    data object Profile : Routes
 }
 
 sealed interface Graphs {

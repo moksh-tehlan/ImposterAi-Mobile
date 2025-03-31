@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.moksh.imposterai.data.local.SharedPreferencesManager
+import com.moksh.imposterai.data.local.TokenManager
 import com.moksh.imposterai.presentation.auth.LoginScreen
 import com.moksh.imposterai.presentation.auth.SingUpScreen
 import com.moksh.imposterai.presentation.chat.ChatScreen
@@ -29,10 +31,12 @@ import com.moksh.imposterai.presentation.core.theme.Black
 import com.moksh.imposterai.presentation.game_viewmodel.GameViewModel
 import com.moksh.imposterai.presentation.home.HomeScreen
 import com.moksh.imposterai.presentation.matchmaking.MatchMakingScreen
+import com.moksh.imposterai.presentation.profile.ProfilePage
 
 @Composable
 fun NavGraph(
     sharedPref: SharedPreferencesManager,
+    tokenMananger: TokenManager,
 ) {
     val startDestination = if (sharedPref.isLoggedIn) Graphs.HomeGraph else Graphs.AuthGraph
     Log.d("StartDestination", startDestination.toString())
@@ -81,6 +85,21 @@ fun NavGraph(
         authGraph(navController)
         homeGraph(navController)
     }
+    LaunchedEffect(key1 = Unit) {
+        tokenMananger.navigationEvent.collect { route ->
+            when (route) {
+                Routes.Login -> {
+                    navController.navigate(route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+
+                else -> {
+                    navController.navigate(route)
+                }
+            }
+        }
+    }
 }
 
 private fun NavGraphBuilder.authGraph(navController: NavHostController) {
@@ -118,7 +137,8 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
             val gameViewModel = entry.sharedViewModel<GameViewModel>(navController)
             HomeScreen(
                 gameViewModel = gameViewModel,
-                onNavigateToMatchmakingScreen = { navController.navigate(Routes.MatchMaking) }
+                onNavigateToMatchmakingScreen = { navController.navigate(Routes.MatchMaking) },
+                onNavigateToProfileScreen = { navController.navigate(Routes.Profile) }
             )
         }
         composable<Routes.MatchMaking> { entry ->
@@ -129,7 +149,7 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
                     navController.popBackStack()
                     navController.navigate(Routes.Chat)
                 },
-                onFindMatchFailure = {
+                onPopBack = {
                     navController.popBackStack()
                 }
             )
@@ -139,10 +159,30 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
             val gameViewModel = entry.sharedViewModel<GameViewModel>(navController)
             ChatScreen(
                 gameViewModel = gameViewModel,
-                onNavigateToHomeScreen = {navController.popBackStack()},
+                onNavigateToHomeScreen = { navController.popBackStack() },
                 onNavigateToMatchMaking = {
                     navController.popBackStack()
                     navController.navigate(Routes.MatchMaking)
+                }
+            )
+        }
+
+        composable<Routes.Profile> {
+            ProfilePage(
+                onPopBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Routes.Login, builder = {
+                        popUpTo(Graphs.HomeGraph) {
+                            inclusive = true
+                        }
+                    })
+                },
+                onDeleteAccount = {
+                    navController.navigate(Routes.Login, builder = {
+                        popUpTo(Graphs.HomeGraph) {
+                            inclusive = true
+                        }
+                    })
                 }
             )
         }
